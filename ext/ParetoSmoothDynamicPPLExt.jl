@@ -16,6 +16,22 @@ const TURING_MODEL_ARG = """
 
 using ParetoSmooth: LIKELIHOOD_FUNCTION_ARG, DATA_ARG, CHAINS_ARG, ARGS, KWARGS
 
+function _check_multi_indices(key)
+    ix1 = findfirst.("[", key)
+    ix2 = findlast.("]", key)
+    indexing = [key[c][i[1]:j[1]] for (c, (i, j)) in enumerate(zip(ix1, ix2))]
+    if any(occursin.(",", indexing))
+        @warn """
+        You are using a matrix or an ND array of observations.
+        This might lead to problems since it can be unclear what the observations are.
+        See issues https://github.com/TuringLang/ParetoSmooth.jl/issues/120 and
+        https://github.com/TuringLang/ParetoSmooth.jl/issues/67 for details.
+        """
+    end
+    return nothing
+end
+
+
 """
     pointwise_log_likelihoods(model::DynamicPPL.Model, chains::Chains) -> Array
 
@@ -38,8 +54,10 @@ function ParetoSmooth.pointwise_log_likelihoods(model::DynamicPPL.Model, chains:
     dims = size(last(first(log_like_dict)))
     # parse "var[i]" -> i
     ind_from_string(x) = parse(Int, rsplit(rsplit(x, "[", limit=2)[2], "]", limit=2)[1])
+    dict_keys = collect(keys(log_like_dict))
+    _check_multi_indices(dict_keys)
     # collect variable names
-    sorted_keys = sort(collect(keys(log_like_dict)); by=ind_from_string)
+    sorted_keys = sort(dict_keys; by=ind_from_string)
     # Convert from dictionary to 3d array
     array = [reshape(log_like_dict[i], 1, dims...) for i in sorted_keys]
     return reduce(vcat, array)

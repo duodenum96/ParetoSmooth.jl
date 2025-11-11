@@ -79,3 +79,17 @@ using Distributions, CSV, DataFrames, Random, MCMCChains, DynamicPPL
         psis_loo_output.estimates(:naive_lpd, :total) atol=.01
 
 end
+
+@testset "Warnings for multi-indices" begin
+
+    @model function _model(data)
+        μ ~ Normal()
+        for i in 1:size(data, 1)
+            data[i, :] .~ Normal(μ, 1)
+        end
+    end
+
+    model = _model(data)
+    chain = Chains(randn(1000, 1, 4), [:μ])
+    @test_logs (:warn,) match_mode = :any psis_loo(model, chain)
+end
