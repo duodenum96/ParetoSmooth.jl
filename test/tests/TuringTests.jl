@@ -89,7 +89,10 @@ end
         end
     end
 
+<<<<<<< HEAD
     data = randn(10, 10)
+=======
+>>>>>>> cf405359d5f15a1b471d1076fb15f6b354cfffcd
     model = _model(data)
     chain = Chains(randn(1000, 1, 4), [:μ])
     @test_logs (:warn,) match_mode = :any psis_loo(model, chain)
